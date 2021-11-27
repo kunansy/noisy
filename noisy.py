@@ -1,14 +1,19 @@
 import argparse
+import asyncio
 import datetime
 import json
 import logging
 import random
 import re
-import sys
 import time
 from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import urljoin, urlparse
+
+import aiohttp
+from urllib3.exceptions import LocationParseError
+
+REQUEST_TIMEOUT = 5
 
 
 class CrawlerTimedOut(Exception):
@@ -24,18 +29,21 @@ class Crawler(object):
         self._links = []
         self._start_time = None
 
-    def _request(self, url):
-        """
-        Sends a POST/GET requests using a random user agent
-        :param url: the url to visit
-        :return: the response Requests object
-        """
+    async def _request(self, url: str) -> Optional[str]:
         random_user_agent = random.choice(self._config["user_agents"])
         headers = {'user-agent': random_user_agent}
+        timeout = aiohttp.ClientTimeout(REQUEST_TIMEOUT)
 
-        response = requests.get(url, headers=headers, timeout=5)
+        async with aiohttp.ClientSession(timeout=timeout) as ses:
+            logging.debug('%s: requesting', url)
+            try:
+                resp = await ses.get(url, headers=headers)
+                resp.raise_for_status()
+            except Exception:
+                logging.error("%s: requesting error", url)
+                return ''
 
-        return response
+        return await resp.text()
 
     @staticmethod
     def _normalize_link(link: str, root_url: str) -> Optional[str]:
@@ -124,7 +132,7 @@ class Crawler(object):
         self._config['blacklisted_urls'].append(link)
         del self._links[self._links.index(link)]
 
-    def _browse_from_links(self, depth=0):
+    async def _browse_from_links(self, depth: int = 0) -> None:
         """
         Selects a random link out of the available link list and visits it.
         Blacklists any link that is not responsive or that contains no other links.
@@ -144,7 +152,7 @@ class Crawler(object):
         random_link = random.choice(self._links)
         try:
             logging.info("Visiting {}".format(random_link))
-            sub_page = self._request(random_link).content
+            sub_page = await self._request(random_link)
             sub_links = self._extract_urls(sub_page, random_link)
 
             # sleep for a random amount of time
@@ -159,11 +167,12 @@ class Crawler(object):
                 # remove the dead-end link from our list
                 self._remove_and_blacklist(random_link)
 
-        except requests.exceptions.RequestException:
-            logging.debug("Exception on URL: %s, removing from list and trying again!" % random_link)
+        except aiohttp.ClientError as e:
+            logging.debug("%s: an exception occured (%s), removing from list and trying again!",
+                          random_link, repr(e))
             self._remove_and_blacklist(random_link)
 
-        self._browse_from_links(depth + 1)
+        await self._browse_from_links(depth + 1)
 
     def load_config_file(self, file_path: Path) -> None:
         """
@@ -196,7 +205,7 @@ class Crawler(object):
 
         return is_timeout_set and is_timed_out
 
-    def crawl(self):
+    async def crawl(self) -> None:
         """
         Collects links from our root urls, stores them and then calls
         `_browse_from_links` to browse them
@@ -206,12 +215,12 @@ class Crawler(object):
         while True:
             url = random.choice(self._config["root_urls"])
             try:
-                body = self._request(url).content
+                body = await self._request(url)
                 self._links = self._extract_urls(body, url)
                 logging.debug("found {} links".format(len(self._links)))
-                self._browse_from_links()
+                await self._browse_from_links()
 
-            except requests.exceptions.RequestException:
+            except aiohttp.ClientError:
                 logging.warn("Error connecting to root url: {}".format(url))
                 
             except MemoryError:
@@ -224,7 +233,8 @@ class Crawler(object):
                 logging.info("Timeout has exceeded, exiting")
                 return
 
-def main():
+
+async def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--log', metavar='-l', type=str, help='logging level', default='info')
     parser.add_argument('--config', metavar='-c', required=True, type=str, help='config file')
@@ -241,8 +251,8 @@ def main():
     if args.timeout:
         crawler.set_option('timeout', args.timeout)
 
-    crawler.crawl()
+    await crawler.crawl()
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
