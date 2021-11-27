@@ -3,7 +3,6 @@ import datetime
 import logging
 import random
 import re
-from typing import Optional
 from urllib.parse import urljoin, urlparse
 
 import aiohttp
@@ -32,7 +31,7 @@ class Crawler(object):
         self._start_time = None
         self._links = []
 
-    async def _request(self, url: str) -> Optional[str]:
+    async def _request(self, url: str) -> str:
         random_user_agent = random.choice(settings.USER_AGENTS)
         headers = {'user-agent': random_user_agent}
         timeout = aiohttp.ClientTimeout(settings.REQUEST_TIMEOUT)
@@ -51,7 +50,7 @@ class Crawler(object):
         return await resp.text()
 
     @staticmethod
-    def _normalize_link(link: str, root_url: str) -> Optional[str]:
+    def _normalize_link(link: str, root_url: str) -> str:
         """
         Normalizes links extracted from the DOM by making them all absolute, so
         we can request them, for example, turns a "/images" link extracted from https://imgur.com
@@ -65,7 +64,7 @@ class Crawler(object):
         except ValueError:
             # urlparse can get confused about urls with the ']'
             # character and thinks it must be a malformed IPv6 URL
-            return None
+            return ''
         parsed_root_url = urlparse(root_url)
 
         # '//' means keep the current protocol used to access this URL
@@ -113,7 +112,7 @@ class Crawler(object):
         :param url: full url to be checked
         :return: boolean of whether or not the url should be accepted and potentially visited
         """
-        return url and self._is_valid_url(url) and not self._is_blacklisted(url)
+        return bool(url) and self._is_valid_url(url) and not self._is_blacklisted(url)
 
     def _extract_urls(self, body: str, root_url: str) -> list[str]:
         """
@@ -126,14 +125,13 @@ class Crawler(object):
         pattern = r"href=[\"'](?!#)(.*?)[\"'].*?"  # ignore links starting with #, no point in re-visiting the same page
         urls = re.findall(pattern, str(body))
 
-        normalize_urls = [
+        normalized_urls = [
             self._normalize_link(url, root_url)
             for url in urls
         ]
 
         return [
-            url
-            for url in normalize_urls
+            url for url in normalized_urls
             if self._should_accept_url(url)
         ]
 
@@ -218,9 +216,9 @@ class Crawler(object):
 
             except aiohttp.ClientError:
                 logging.warning("%s: error connecting to root url", url)
-                
+
             except MemoryError:
-                logging.warning("%s: content is exhausting the memory",url)
+                logging.warning("%s: content is exhausting the memory", url)
 
             except LocationParseError:
                 logging.warning("%s: error encountered during parsing", url)
