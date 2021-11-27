@@ -1,18 +1,16 @@
-import argparse
 import asyncio
 import datetime
-import json
 import logging
 import random
 import re
-from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 from urllib.parse import urljoin, urlparse
 
 import aiohttp
 from urllib3.exceptions import LocationParseError
 
 import settings
+
 
 REQUEST_TIMEOUT = 5
 
@@ -184,25 +182,6 @@ class Crawler(object):
 
         await self._browse_from_links(depth + 1)
 
-    def load_config_file(self, file_path: Path) -> None:
-        """
-        Loads and decodes a JSON config file, sets the config of the crawler instance
-        to the loaded one
-        :param file_path: path of the config file
-        :return:
-        """
-        with file_path.open() as config_file:
-            config = json.load(config_file)
-        self._config = config
-
-    def set_option(self, option: str, value: Any) -> None:
-        """
-        Sets a specific key in the config dict
-        :param option: the option key in the config, for example: "max_depth"
-        :param value: value for the option
-        """
-        self._config[option] = value
-
     def _is_timeout_reached(self) -> bool:
         """
         Determines whether the specified timeout has reached, if no timeout
@@ -249,22 +228,7 @@ class Crawler(object):
 
 
 async def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--log', metavar='-l', type=str, help='logging level', default='info')
-    parser.add_argument('--config', metavar='-c', required=True, type=str, help='config file')
-    parser.add_argument('--timeout', metavar='-t', required=False, type=int,
-                        help='for how long the crawler should be running, in seconds', default=False)
-    args = parser.parse_args()
-
-    level = getattr(logging, args.log.upper())
-    logging.basicConfig(level=level)
-
     crawler = Crawler()
-    crawler.load_config_file(args.config)
-
-    if args.timeout:
-        crawler.set_option('timeout', args.timeout)
-
     await crawler.crawl()
 
 
