@@ -14,7 +14,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 Clone the repository
 ```
-git clone https://github.com/1tayH/noisy.git
+git clone https://github.com/kunansy/noisy.git
 ```
 
 Run the container
@@ -43,14 +43,11 @@ INFO    [2021-11-27 14:54:54,993] [crawl():222] Timeout has exceeded, exiting
 ...
 ```
 
-## Some examples
-
-Some edge-cases examples are available on the `examples` folder. You can read more there [examples/README.md](examples/README.md).
-
 ## Authors
 
 * **Itay Hury** - *Initial work* - [1tayH](https://github.com/1tayH)
- 
+* **Kunansy** - [kunansy](https://github.com/kunansy)
+
 See also the list of [contributors](https://github.com/1tayH/Noisy/contributors) who participated in this project.
 
 ## License
