@@ -150,8 +150,7 @@ class Crawler:
         a dead end has reached or when we ran out of links
         :param depth: our current link depth
         """
-        is_depth_reached = depth >= settings.MAX_DEPTH
-        if not len(self._links) or is_depth_reached:
+        if not self._links or depth >= settings.MAX_DEPTH:
             logging.debug("Hit a dead end, moving to the next root URL")
             # escape from the recursion, we don't have links to continue or we have reached the max depth
             return
