@@ -1,0 +1,10 @@
+version: '3'
+
+services:
+  noisy:
+    build: .
+    container_name: noisy
+    restart: always
+    entrypoint: ["/srv/cronn", "-c", "@every 1m python3 noisy.py -c config.json"]
+    healthcheck:
+      test: "exit 0"
