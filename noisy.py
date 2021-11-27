@@ -12,6 +12,8 @@ from urllib.parse import urljoin, urlparse
 import aiohttp
 from urllib3.exceptions import LocationParseError
 
+import settings
+
 REQUEST_TIMEOUT = 5
 
 
@@ -24,12 +26,11 @@ class Crawler(object):
         """
         Initializes the Crawl class
         """
-        self._config = {}
-        self._links = []
         self._start_time = None
+        self._links = []
 
     async def _request(self, url: str) -> Optional[str]:
-        random_user_agent = random.choice(self._config["user_agents"])
+        random_user_agent = random.choice(settings.USER_AGENTS)
         headers = {'user-agent': random_user_agent}
         timeout = aiohttp.ClientTimeout(REQUEST_TIMEOUT)
 
@@ -100,7 +101,7 @@ class Crawler(object):
         """
         return any(
             blacklisted_url in url
-            for blacklisted_url in self._config["blacklisted_urls"]
+            for blacklisted_url in settings.BLACKLISTED_URLS
         )
 
     def _should_accept_url(self, url: str) -> bool:
@@ -139,7 +140,7 @@ class Crawler(object):
         and blacklists it so we don't visit it in the future
         :param link: link to remove and blacklist
         """
-        self._config['blacklisted_urls'] += [link]
+        settings.BLACKLISTED_URLS += [link]
         self._links.pop(self._links.index(link))
 
     async def _browse_from_links(self, depth: int = 0) -> None:
@@ -150,7 +151,7 @@ class Crawler(object):
         a dead end has reached or when we ran out of links
         :param depth: our current link depth
         """
-        is_depth_reached = depth >= self._config['max_depth']
+        is_depth_reached = depth >= settings.MAX_DEPTH
         if not len(self._links) or is_depth_reached:
             logging.debug("Hit a dead end, moving to the next root URL")
             # escape from the recursion, we don't have links to continue or we have reached the max depth
@@ -164,7 +165,7 @@ class Crawler(object):
             sub_page = await self._request(random_link)
             sub_links = self._extract_urls(sub_page, random_link)
 
-            sleep = random.randrange(self._config["min_sleep"], self._config["max_sleep"])
+            sleep = random.randrange(settings.MIN_SLEEP, settings.MAX_SLEEP)
             await asyncio.sleep(sleep)
 
             # make sure we have more than 1 link to pick from
@@ -209,7 +210,7 @@ class Crawler(object):
         :return: boolean indicating whether the timeout has reached
         """
         is_timed_out = False
-        if timeout := self._config.get('timeout'):
+        if timeout := settings.TIMEOUT:
             end_time = self._start_time + datetime.timedelta(seconds=timeout)
             is_timed_out = datetime.datetime.now() >= end_time
 
@@ -224,7 +225,7 @@ class Crawler(object):
         self._start_time = datetime.datetime.now()
 
         while True:
-            url = random.choice(self._config["root_urls"])
+            url = random.choice(settings.ROOT_URLS)
             try:
                 body = await self._request(url)
                 self._links = self._extract_urls(body, url)
