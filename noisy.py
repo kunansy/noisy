@@ -23,6 +23,71 @@ logging.basicConfig(
 )
 
 
+async def request(url: str) -> str:
+    random_user_agent = random.choice(settings.USER_AGENTS)
+    headers = {'user-agent': random_user_agent}
+    timeout = aiohttp.ClientTimeout(settings.REQUEST_TIMEOUT)
+
+    async with aiohttp.ClientSession(timeout=timeout) as ses:
+        logging.debug('%s: requesting', url)
+        try:
+            resp = await ses.get(url, headers=headers)
+            resp.raise_for_status()
+        except Exception:
+            logging.error("%s: requesting error", url)
+            return ''
+        else:
+            logging.debug("%s: response received", url)
+
+    return await resp.text()
+
+
+def normalize_link(link: str, root_url: str) -> str:
+    """
+    Normalizes links extracted from the DOM by making them all absolute, so
+    we can request them, for example, turns a "/images" link extracted from https://imgur.com
+    to "https://imgur.com/images"
+    :param link: link found in the DOM
+    :param root_url: the URL the DOM was loaded from
+    :return: absolute link
+    """
+    try:
+        parsed_url = urlparse(link)
+    except ValueError:
+        # urlparse can get confused about urls with the ']'
+        # character and thinks it must be a malformed IPv6 URL
+        return ''
+    parsed_root_url = urlparse(root_url)
+
+    # '//' means keep the current protocol used to access this URL
+    if link.startswith("//"):
+        return f"{parsed_root_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
+
+    # possibly a relative path
+    if not parsed_url.scheme:
+        return urljoin(root_url, link)
+
+    return link
+
+
+def is_valid_url(url: str) -> bool:
+    """
+    Check if a url is a valid url.
+    Used to filter out invalid values that were found in the "href" attribute,
+    for example "javascript:void(0)"
+    taken from https://stackoverflow.com/questions/7160737
+    :param url: url to be checked
+    :return: boolean indicating whether the URL is valid or not
+    """
+    regex = re.compile(
+        r'^(?:http|ftp)s?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return re.match(regex, url) is not None
+
+
 class Crawler(object):
     def __init__(self):
         """
@@ -30,70 +95,7 @@ class Crawler(object):
         """
         self._start_time = None
         self._links = []
-
-    async def _request(self, url: str) -> str:
-        random_user_agent = random.choice(settings.USER_AGENTS)
-        headers = {'user-agent': random_user_agent}
-        timeout = aiohttp.ClientTimeout(settings.REQUEST_TIMEOUT)
-
-        async with aiohttp.ClientSession(timeout=timeout) as ses:
-            logging.debug('%s: requesting', url)
-            try:
-                resp = await ses.get(url, headers=headers)
-                resp.raise_for_status()
-            except Exception:
-                logging.error("%s: requesting error", url)
-                return ''
-            else:
-                logging.debug("%s: response received", url)
-
-        return await resp.text()
-
-    @staticmethod
-    def _normalize_link(link: str, root_url: str) -> str:
-        """
-        Normalizes links extracted from the DOM by making them all absolute, so
-        we can request them, for example, turns a "/images" link extracted from https://imgur.com
-        to "https://imgur.com/images"
-        :param link: link found in the DOM
-        :param root_url: the URL the DOM was loaded from
-        :return: absolute link
-        """
-        try:
-            parsed_url = urlparse(link)
-        except ValueError:
-            # urlparse can get confused about urls with the ']'
-            # character and thinks it must be a malformed IPv6 URL
-            return ''
-        parsed_root_url = urlparse(root_url)
-
-        # '//' means keep the current protocol used to access this URL
-        if link.startswith("//"):
-            return f"{parsed_root_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
-
-        # possibly a relative path
-        if not parsed_url.scheme:
-            return urljoin(root_url, link)
-
-        return link
-
-    @staticmethod
-    def _is_valid_url(url: str) -> bool:
-        """
-        Check if a url is a valid url.
-        Used to filter out invalid values that were found in the "href" attribute,
-        for example "javascript:void(0)"
-        taken from https://stackoverflow.com/questions/7160737
-        :param url: url to be checked
-        :return: boolean indicating whether the URL is valid or not
-        """
-        regex = re.compile(
-            r'^(?:http|ftp)s?://'  # http:// or https://
-            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
-            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-            r'(?::\d+)?'  # optional port
-            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-        return re.match(regex, url) is not None
+        self._blacklist = settings.BLACKLISTED_URLS.copy()
 
     def _is_blacklisted(self, url: str) -> bool:
         """
@@ -103,7 +105,7 @@ class Crawler(object):
         """
         return any(
             blacklisted_url in url
-            for blacklisted_url in settings.BLACKLISTED_URLS
+            for blacklisted_url in self._blacklist
         )
 
     def _should_accept_url(self, url: str) -> bool:
@@ -112,7 +114,7 @@ class Crawler(object):
         :param url: full url to be checked
         :return: boolean of whether or not the url should be accepted and potentially visited
         """
-        return bool(url) and self._is_valid_url(url) and not self._is_blacklisted(url)
+        return bool(url) and is_valid_url(url) and not self._is_blacklisted(url)
 
     def _extract_urls(self, body: str, root_url: str) -> list[str]:
         """
@@ -126,7 +128,7 @@ class Crawler(object):
         urls = re.findall(pattern, str(body))
 
         normalized_urls = [
-            self._normalize_link(url, root_url)
+            normalize_link(url, root_url)
             for url in urls
         ]
 
@@ -141,7 +143,7 @@ class Crawler(object):
         and blacklists it so we don't visit it in the future
         :param link: link to remove and blacklist
         """
-        settings.BLACKLISTED_URLS += [link]
+        self._blacklist += [link]
         self._links.pop(self._links.index(link))
 
     async def _browse_from_links(self, depth: int = 0) -> None:
@@ -163,7 +165,7 @@ class Crawler(object):
 
         random_link = random.choice(self._links)
         try:
-            sub_page = await self._request(random_link)
+            sub_page = await request(random_link)
             sub_links = self._extract_urls(sub_page, random_link)
 
             sleep = random.randrange(settings.MIN_SLEEP, settings.MAX_SLEEP)
@@ -209,7 +211,7 @@ class Crawler(object):
         while True:
             url = random.choice(settings.ROOT_URLS)
             try:
-                body = await self._request(url)
+                body = await request(url)
                 self._links = self._extract_urls(body, url)
                 logging.debug("found {} links".format(len(self._links)))
                 await self._browse_from_links()
