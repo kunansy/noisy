@@ -6,7 +6,6 @@ import re
 from urllib.parse import urljoin, urlparse
 
 import aiohttp
-from urllib3.exceptions import LocationParseError
 
 import settings
 
@@ -88,11 +87,8 @@ def is_valid_url(url: str) -> bool:
     return re.match(regex, url) is not None
 
 
-class Crawler(object):
+class Crawler:
     def __init__(self):
-        """
-        Initializes the Crawl class
-        """
         self._start_time = None
         self._links = []
         self._blacklist = settings.BLACKLISTED_URLS.copy()
@@ -213,7 +209,7 @@ class Crawler(object):
             try:
                 body = await request(url)
                 self._links = self._extract_urls(body, url)
-                logging.debug("found {} links".format(len(self._links)))
+                logging.debug("%s: found %s links", url, len(self._links))
                 await self._browse_from_links()
 
             except aiohttp.ClientError:
@@ -222,12 +218,11 @@ class Crawler(object):
             except MemoryError:
                 logging.warning("%s: content is exhausting the memory", url)
 
-            except LocationParseError:
-                logging.warning("%s: error encountered during parsing", url)
-
             except CrawlerTimedOut:
                 logging.info("Timeout has exceeded, exiting")
-                return
+
+            except Exception as e:
+                logging.warning("%s: error occurred: %s", url, repr(e))
 
             logging.info("Noising finished")
 
