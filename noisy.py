@@ -219,11 +219,12 @@ class Crawler:
 
             except CrawlerTimedOut:
                 logging.info("Timeout has exceeded, exiting")
+                break
 
             except Exception as e:
                 logging.warning("%s: error occurred: %s", url, repr(e))
 
-            logging.info("Noising finished")
+        logging.info("Noising finished")
 
 
 async def main() -> None:
