@@ -175,19 +175,6 @@ class Crawler(object):
         """
         with open(file_path, 'r') as config_file:
             config = json.load(config_file)
-            self.set_config(config)
-
-    def set_config(self, config):
-        """
-        Sets the config of the crawler instance to the provided dict
-        :param config: dict of configuration options, for example:
-        {
-            "root_urls": [],
-            "blacklisted_urls": [],
-            "click_depth": 5
-            ...
-        }
-        """
         self._config = config
 
     def set_option(self, option, value):
