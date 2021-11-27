@@ -6,9 +6,8 @@ import random
 import re
 import sys
 import time
-
-import requests
-from urllib3.exceptions import LocationParseError
+from pathlib import Path
+from typing import Any, Optional
 from urllib.parse import urljoin, urlparse
 
 
@@ -39,7 +38,7 @@ class Crawler(object):
         return response
 
     @staticmethod
-    def _normalize_link(link, root_url):
+    def _normalize_link(link: str, root_url: str) -> Optional[str]:
         """
         Normalizes links extracted from the DOM by making them all absolute, so
         we can request them, for example, turns a "/images" link extracted from https://imgur.com
@@ -67,7 +66,7 @@ class Crawler(object):
         return link
 
     @staticmethod
-    def _is_valid_url(url):
+    def _is_valid_url(url: str) -> bool:
         """
         Check if a url is a valid url.
         Used to filter out invalid values that were found in the "href" attribute,
@@ -84,7 +83,7 @@ class Crawler(object):
             r'(?:/?|[/?]\S+)$', re.IGNORECASE)
         return re.match(regex, url) is not None
 
-    def _is_blacklisted(self, url):
+    def _is_blacklisted(self, url: str) -> bool:
         """
         Checks is a URL is blacklisted
         :param url: full URL
@@ -92,7 +91,7 @@ class Crawler(object):
         """
         return any(blacklisted_url in url for blacklisted_url in self._config["blacklisted_urls"])
 
-    def _should_accept_url(self, url):
+    def _should_accept_url(self, url: str) -> bool:
         """
         filters url if it is blacklisted or not valid, we put filtering logic here
         :param url: full url to be checked
@@ -100,7 +99,7 @@ class Crawler(object):
         """
         return url and self._is_valid_url(url) and not self._is_blacklisted(url)
 
-    def _extract_urls(self, body, root_url):
+    def _extract_urls(self, body: str, root_url: str) -> list[str]:
         """
         gathers links to be visited in the future from a web page's body.
         does it by finding "href" attributes in the DOM
@@ -116,7 +115,7 @@ class Crawler(object):
 
         return filtered_urls
 
-    def _remove_and_blacklist(self, link):
+    def _remove_and_blacklist(self, link: str) -> None:
         """
         Removes a link from our current links list
         and blacklists it so we don't visit it in the future
@@ -166,7 +165,7 @@ class Crawler(object):
 
         self._browse_from_links(depth + 1)
 
-    def load_config_file(self, file_path):
+    def load_config_file(self, file_path: Path) -> None:
         """
         Loads and decodes a JSON config file, sets the config of the crawler instance
         to the loaded one
@@ -177,7 +176,7 @@ class Crawler(object):
             config = json.load(config_file)
         self._config = config
 
-    def set_option(self, option, value):
+    def set_option(self, option: str, value: Any) -> None:
         """
         Sets a specific key in the config dict
         :param option: the option key in the config, for example: "max_depth"
@@ -185,7 +184,7 @@ class Crawler(object):
         """
         self._config[option] = value
 
-    def _is_timeout_reached(self):
+    def _is_timeout_reached(self) -> bool:
         """
         Determines whether the specified timeout has reached, if no timeout
         is specified then return false
