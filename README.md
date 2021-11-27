@@ -4,19 +4,11 @@
 
 A simple python script that generates random HTTP/DNS traffic noise in the background while you go about your regular web browsing, to make your web traffic data less valuable for selling and for extra obscurity.
 
-Tested on MacOS High Sierra, Ubuntu 16.04 and Raspbian Stretch and is compatable with both Python 2.7 and 3.6
+Noisy is expected to be executed in Docker, OS doesn't matter.
 
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine
-
-### Dependencies
-
-Install `requests` if you do not have it already installed, using `pip`:
-
-```
-pip install requests
-```
 
 ### Usage
 
@@ -25,79 +17,31 @@ Clone the repository
 git clone https://github.com/1tayH/noisy.git
 ```
 
-Navigate into the `noisy` directory
-```
-cd noisy
-```
-
-Run the script
+Run the container
 
 ```
-python noisy.py --config config.json
+docker-compose up -d --build --force-recreate
 ```
-
-The program can accept a number of command line arguments:
-```
-$ python noisy.py --help
-usage: noisy.py [-h] [--log -l] --config -c [--timeout -t]
-
-optional arguments:
-  -h, --help    show this help message and exit
-  --log -l      logging level
-  --config -c   config file
-  --timeout -t  for how long the crawler should be running, in seconds
-```
-only the config file argument is required.
 
 ###  Output
 ```
-$ docker run -it noisy --config config.json --log debug
-DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): 4chan.org:80
-DEBUG:urllib3.connectionpool:http://4chan.org:80 "GET / HTTP/1.1" 301 None
-DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): www.4chan.org:80
-DEBUG:urllib3.connectionpool:http://www.4chan.org:80 "GET / HTTP/1.1" 200 None
-DEBUG:root:found 92 links
-INFO:root:Visiting http://boards.4chan.org/s4s/
-DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): boards.4chan.org:80
-DEBUG:urllib3.connectionpool:http://boards.4chan.org:80 "GET /s4s/ HTTP/1.1" 200 None
-INFO:root:Visiting http://boards.4chan.org/s4s/thread/6850193#p6850345
-DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): boards.4chan.org:80
-DEBUG:urllib3.connectionpool:http://boards.4chan.org:80 "GET /s4s/thread/6850193 HTTP/1.1" 200 None
-INFO:root:Visiting http://boards.4chan.org/o/
-DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): boards.4chan.org:80
-DEBUG:urllib3.connectionpool:http://boards.4chan.org:80 "GET /o/ HTTP/1.1" 200 None
-DEBUG:root:Hit a dead end, moving to the next root URL
-DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): www.reddit.com:443
-DEBUG:urllib3.connectionpool:https://www.reddit.com:443 "GET / HTTP/1.1" 200 None
-DEBUG:root:found 237 links
-INFO:root:Visiting https://www.reddit.com/user/Saditon
-DEBUG:urllib3.connectionpool:Starting new HTTPS connection (1): www.reddit.com:443
-DEBUG:urllib3.connectionpool:https://www.reddit.com:443 "GET /user/Saditon HTTP/1.1" 200 None
+$ NOISY_DELAY=30 TIMEOUT=120 docker-compose up --build --force-recreate
+INFO    [2021-11-27 14:54:20,427] [crawl():203] Noising started
+DEBUG   [2021-11-27 14:54:21,729] [request():31] http://4chan.org: requesting
+DEBUG   [2021-11-27 14:54:22,830] [request():39] http://4chan.org: response received
+DEBUG   [2021-11-27 14:54:22,842] [crawl():212] http://4chan.org: found 104 links
+DEBUG   [2021-11-27 14:54:23,724] [request():31] https://wikipedia.org: requesting
+DEBUG   [2021-11-27 14:54:24, 95] [request():39] https://wikipedia.org: response received
+DEBUG   [2021-11-27 14:54:25,741] [request():31] https://instagram.com: requesting
+DEBUG   [2021-11-27 14:54:26,825] [request():39] https://instagram.com: response received
+DEBUG   [2021-11-27 14:54:50,740] [request():31] https://google.com: requesting
+DEBUG   [2021-11-27 14:54:51, 65] [request():39] https://google.com: response received
+DEBUG   [2021-11-27 14:54:54,742] [request():31] https://google.com: requesting
+DEBUG   [2021-11-27 14:54:54,986] [request():39] https://google.com: response received
+DEBUG   [2021-11-27 14:54:54,993] [crawl():212] https://google.com: found 8 links
+INFO    [2021-11-27 14:54:54,993] [crawl():222] Timeout has exceeded, exiting
 ...
 ```
-
-## Build Using Docker
-
-1. Build the image
-
-`docker build -t noisy .`
-
-**Or** if you'd like to build it for a **Raspberry Pi** (running Raspbian stretch):
-
-`docker build -f Dockerfile.pi -t noisy .`
-
-2. Create the container and run:
-
-`docker run -it noisy --config config.json`
-
-## Build Using Docker Compose
-
-1. Configure the time when Noisy'll automatically run. 
-See [cronn docs](https://github.com/umputun/cronn#readme), cron [syntax tutorial](https://crontab.guru/#30_*_*_*_*)
-
-2. Run it
-
-`docker-compose up -d --build --force-recreate`
 
 ## Some examples
 
@@ -106,7 +50,7 @@ Some edge-cases examples are available on the `examples` folder. You can read mo
 ## Authors
 
 * **Itay Hury** - *Initial work* - [1tayH](https://github.com/1tayH)
-
+ 
 See also the list of [contributors](https://github.com/1tayH/Noisy/contributors) who participated in this project.
 
 ## License
@@ -118,4 +62,4 @@ This project is licensed under the GNU GPLv3 License - see the [LICENSE.md](LICE
 This project has been inspired by
 * [RandomNoise](http://www.randomnoise.us)
 * [web-traffic-generator](https://github.com/ecapuano/web-traffic-generator)
-* [cronn](https://github.com/umputun/cronn) – simple cron for containers.
+* [cronn](https://github.com/umputun/cronn) – a simple cron for containers.
