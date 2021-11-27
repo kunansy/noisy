@@ -204,7 +204,7 @@ class Crawler:
         self._start_time = datetime.datetime.now()
 
         while True:
-            # TODO: use a workers here
+            # TODO: use workers here
             url = random.choice(settings.ROOT_URLS)
             try:
                 body = await request(url)
@@ -220,7 +220,7 @@ class Crawler:
 
             except CrawlerTimedOut:
                 logging.info("Timeout has exceeded, exiting")
-                break
+                return
 
             except Exception as e:
                 logging.warning("%s: error occurred: %s", url, repr(e))
