@@ -204,6 +204,7 @@ class Crawler:
         self._start_time = datetime.datetime.now()
 
         while True:
+            # TODO: use a workers here
             url = random.choice(settings.ROOT_URLS)
             try:
                 body = await request(url)
