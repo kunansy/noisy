@@ -90,6 +90,15 @@ DEBUG:urllib3.connectionpool:https://www.reddit.com:443 "GET /user/Saditon HTTP/
 
 `docker run -it noisy --config config.json`
 
+## Build Using Docker Compose
+
+1. Configure the time when Noisy'll automatically run. 
+See [cronn docs](https://github.com/umputun/cronn#readme), cron [syntax tutorial](https://crontab.guru/#30_*_*_*_*)
+
+2. Run it
+
+`docker-compose up -d --build --force-recreate`
+
 ## Some examples
 
 Some edge-cases examples are available on the `examples` folder. You can read more there [examples/README.md](examples/README.md).
@@ -109,3 +118,4 @@ This project is licensed under the GNU GPLv3 License - see the [LICENSE.md](LICE
 This project has been inspired by
 * [RandomNoise](http://www.randomnoise.us)
 * [web-traffic-generator](https://github.com/ecapuano/web-traffic-generator)
+* [cronn](https://github.com/umputun/cronn) – simple cron for containers.
