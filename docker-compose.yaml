@@ -6,6 +6,6 @@ services:
     container_name: noisy
     env_file: .env
     restart: always
-    entrypoint: ["/srv/cronn", "-c", "@every 1m python3 noisy.py"]
+    entrypoint: ["/srv/cronn", "-c", "@every ${NOISY_DELAY}m python3 noisy.py"]
     healthcheck:
       test: "exit 0"
