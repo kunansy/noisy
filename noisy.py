@@ -65,7 +65,7 @@ class Crawler(object):
 
         # '//' means keep the current protocol used to access this URL
         if link.startswith("//"):
-            return "{}://{}{}".format(parsed_root_url.scheme, parsed_url.netloc, parsed_url.path)
+            return f"{parsed_root_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
 
         # possibly a relative path
         if not parsed_url.scheme:
@@ -97,7 +97,10 @@ class Crawler(object):
         :param url: full URL
         :return: boolean indicating whether a URL is blacklisted or not
         """
-        return any(blacklisted_url in url for blacklisted_url in self._config["blacklisted_urls"])
+        return any(
+            blacklisted_url in url
+            for blacklisted_url in self._config["blacklisted_urls"]
+        )
 
     def _should_accept_url(self, url: str) -> bool:
         """
@@ -118,10 +121,16 @@ class Crawler(object):
         pattern = r"href=[\"'](?!#)(.*?)[\"'].*?"  # ignore links starting with #, no point in re-visiting the same page
         urls = re.findall(pattern, str(body))
 
-        normalize_urls = [self._normalize_link(url, root_url) for url in urls]
-        filtered_urls = list(filter(self._should_accept_url, normalize_urls))
+        normalize_urls = [
+            self._normalize_link(url, root_url)
+            for url in urls
+        ]
 
-        return filtered_urls
+        return [
+            url
+            for url in normalize_urls
+            if self._should_accept_url(url)
+        ]
 
     def _remove_and_blacklist(self, link: str) -> None:
         """
@@ -129,8 +138,8 @@ class Crawler(object):
         and blacklists it so we don't visit it in the future
         :param link: link to remove and blacklist
         """
-        self._config['blacklisted_urls'].append(link)
-        del self._links[self._links.index(link)]
+        self._config['blacklisted_urls'] += [link]
+        self._links.pop(self._links.index(link))
 
     async def _browse_from_links(self, depth: int = 0) -> None:
         """
@@ -147,11 +156,10 @@ class Crawler(object):
             return
 
         if self._is_timeout_reached():
-            raise self.CrawlerTimedOut
+            raise CrawlerTimedOut
 
         random_link = random.choice(self._links)
         try:
-            logging.info("Visiting {}".format(random_link))
             sub_page = await self._request(random_link)
             sub_links = self._extract_urls(sub_page, random_link)
 
@@ -168,7 +176,7 @@ class Crawler(object):
                 self._remove_and_blacklist(random_link)
 
         except aiohttp.ClientError as e:
-            logging.debug("%s: an exception occured (%s), removing from list and trying again!",
+            logging.debug("%s: an exception occurred (%s), removing from list and trying again!",
                           random_link, repr(e))
             self._remove_and_blacklist(random_link)
 
@@ -181,7 +189,7 @@ class Crawler(object):
         :param file_path: path of the config file
         :return:
         """
-        with open(file_path, 'r') as config_file:
+        with file_path.open() as config_file:
             config = json.load(config_file)
         self._config = config
 
@@ -199,11 +207,12 @@ class Crawler(object):
         is specified then return false
         :return: boolean indicating whether the timeout has reached
         """
-        is_timeout_set = self._config["timeout"] is not False  # False is set when no timeout is desired
-        end_time = self._start_time + datetime.timedelta(seconds=self._config["timeout"])
-        is_timed_out = datetime.datetime.now() >= end_time
+        is_timed_out = False
+        if timeout := self._config.get('timeout'):
+            end_time = self._start_time + datetime.timedelta(seconds=timeout)
+            is_timed_out = datetime.datetime.now() >= end_time
 
-        return is_timeout_set and is_timed_out
+        return timeout and is_timed_out
 
     async def crawl(self) -> None:
         """
@@ -221,15 +230,15 @@ class Crawler(object):
                 await self._browse_from_links()
 
             except aiohttp.ClientError:
-                logging.warn("Error connecting to root url: {}".format(url))
+                logging.warning("%s: error connecting to root url", url)
                 
             except MemoryError:
-                logging.warn("Error: content at url: {} is exhausting the memory".format(url))
+                logging.warning("%s: content is exhausting the memory",url)
 
             except LocationParseError:
-                logging.warn("Error encountered during parsing of: {}".format(url))
+                logging.warning("%s: error encountered during parsing", url)
 
-            except self.CrawlerTimedOut:
+            except CrawlerTimedOut:
                 logging.info("Timeout has exceeded, exiting")
                 return
 
