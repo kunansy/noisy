@@ -12,6 +12,10 @@ from urllib3.exceptions import LocationParseError
 from urllib.parse import urljoin, urlparse
 
 
+class CrawlerTimedOut(Exception):
+    pass
+
+
 class Crawler(object):
     def __init__(self):
         """
@@ -20,12 +24,6 @@ class Crawler(object):
         self._config = {}
         self._links = []
         self._start_time = None
-
-    class CrawlerTimedOut(Exception):
-        """
-        Raised when the specified timeout is exceeded
-        """
-        pass
 
     def _request(self, url):
         """
