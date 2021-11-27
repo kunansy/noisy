@@ -42,6 +42,8 @@ class Crawler(object):
             except Exception:
                 logging.error("%s: requesting error", url)
                 return ''
+            else:
+                logging.debug("%s: response received", url)
 
         return await resp.text()
 
@@ -219,6 +221,7 @@ class Crawler(object):
         Collects links from our root urls, stores them and then calls
         `_browse_from_links` to browse them
         """
+        logging.info("Noising started")
         self._start_time = datetime.datetime.now()
 
         while True:
@@ -241,6 +244,8 @@ class Crawler(object):
             except CrawlerTimedOut:
                 logging.info("Timeout has exceeded, exiting")
                 return
+
+            logging.info("Noising finished")
 
 
 async def main() -> None:
