@@ -4,7 +4,8 @@ services:
   noisy:
     build: .
     container_name: noisy
+    env_file: .env
     restart: always
-    entrypoint: ["/srv/cronn", "-c", "@every 1m python3 noisy.py -c config.json"]
+    entrypoint: ["/srv/cronn", "-c", "@every 1m python3 noisy.py"]
     healthcheck:
       test: "exit 0"
