@@ -5,7 +5,6 @@ import json
 import logging
 import random
 import re
-import time
 from pathlib import Path
 from typing import Any, Optional
 from urllib.parse import urljoin, urlparse
@@ -165,8 +164,8 @@ class Crawler(object):
             sub_page = await self._request(random_link)
             sub_links = self._extract_urls(sub_page, random_link)
 
-            # sleep for a random amount of time
-            time.sleep(random.randrange(self._config["min_sleep"], self._config["max_sleep"]))
+            sleep = random.randrange(self._config["min_sleep"], self._config["max_sleep"])
+            await asyncio.sleep(sleep)
 
             # make sure we have more than 1 link to pick from
             if len(sub_links) > 1:
