@@ -9,17 +9,7 @@ import time
 
 import requests
 from urllib3.exceptions import LocationParseError
-
-try:                 # Python 2
-    from urllib.parse import urljoin, urlparse
-except ImportError:  # Python 3
-    from urlparse import urljoin, urlparse
-
-try:                 # Python 2
-    reload(sys)
-    sys.setdefaultencoding('latin-1')
-except NameError:    # Python 3
-    pass
+from urllib.parse import urljoin, urlparse
 
 
 class Crawler(object):
