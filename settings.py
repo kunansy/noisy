@@ -3,6 +3,7 @@ from environs import Env
 env = Env()
 env.read_env()
 
+REQUEST_TIMEOUT = env.int("REQUEST_TIMEOUT", 5)
 MAX_DEPTH = env.int("MAX_DEPTH", 25)
 MIN_SLEEP = env.int("MIN_SLEEP", 3)
 MAX_SLEEP = env.int("MAX_SLEEP", 6)

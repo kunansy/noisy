@@ -12,9 +12,6 @@ from urllib3.exceptions import LocationParseError
 import settings
 
 
-REQUEST_TIMEOUT = 5
-
-
 class CrawlerTimedOut(Exception):
     pass
 
@@ -30,7 +27,7 @@ class Crawler(object):
     async def _request(self, url: str) -> Optional[str]:
         random_user_agent = random.choice(settings.USER_AGENTS)
         headers = {'user-agent': random_user_agent}
-        timeout = aiohttp.ClientTimeout(REQUEST_TIMEOUT)
+        timeout = aiohttp.ClientTimeout(settings.REQUEST_TIMEOUT)
 
         async with aiohttp.ClientSession(timeout=timeout) as ses:
             logging.debug('%s: requesting', url)
