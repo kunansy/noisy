@@ -1,6 +1,10 @@
 
 # Noisy
 [![CircleCI](https://circleci.com/gh/1tayH/noisy/tree/master.svg?style=shield)](https://circleci.com/gh/1tayH/noisy/tree/master)
+![Linters status](https://github.com/kunansy/noisy/actions/workflows/python-app.yml/badge.svg)
+![Build Status](https://github.com/kunansy/noisy/actions/workflows/docker-image.yml/badge.svg)
+![Stable Version](https://img.shields.io/github/v/tag/kunansy/noisy)
+![Latest Release](https://img.shields.io/github/v/release/kunansy/noisy?color=%233D9970)
 
 A simple python script that generates random HTTP/DNS traffic noise in the background while you go about your regular web browsing, to make your web traffic data less valuable for selling and for extra obscurity.
 
