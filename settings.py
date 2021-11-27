@@ -3,6 +3,10 @@ from environs import Env
 env = Env()
 env.read_env()
 
+LOG_FMT = "{levelname:<7} [{asctime},{msecs:3.0f}] " \
+          "[{funcName}():{lineno}] {message}"
+DATE_FMT = "%Y-%m-%d %H:%M:%S"
+
 REQUEST_TIMEOUT = env.int("REQUEST_TIMEOUT", 5)
 MAX_DEPTH = env.int("MAX_DEPTH", 25)
 MIN_SLEEP = env.int("MIN_SLEEP", 3)

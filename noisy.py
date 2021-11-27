@@ -16,6 +16,14 @@ class CrawlerTimedOut(Exception):
     pass
 
 
+logging.basicConfig(
+    format=settings.LOG_FMT,
+    datefmt=settings.DATE_FMT,
+    style='{',
+    level=settings.LOG_LEVEL
+)
+
+
 class Crawler(object):
     def __init__(self):
         """
