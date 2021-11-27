@@ -7,9 +7,7 @@ license = "GPL-3.0"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-types-requests = "~2.26.1"
 aiohttp = "~3.8.0"
-orjson = "~3.6.4"
 environs = "~9.3.4"
 
 [tool.poetry.dev-dependencies]
